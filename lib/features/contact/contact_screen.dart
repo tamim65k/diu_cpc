@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/contact_service.dart';
 import '../../widgets/gradient_background.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/gradient_button.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({super.key});
@@ -87,112 +89,143 @@ class _ContactScreenState extends State<ContactScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text(
           'Contact & Support',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: AppColors.mediumBlue,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.deepPurple,
+        iconTheme: const IconThemeData(color: AppColors.mediumBlue),
       ),
       body: GradientBackground(
         useStandardBackground: true,
         backgroundColor: AppColors.primaryBackground,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderSection(),
-              const SizedBox(height: 30),
-              _buildContactForm(),
-              const SizedBox(height: 40),
-              _buildSocialMediaSection(),
-              const SizedBox(height: 30),
-              _buildContactInfoSection(),
-            ],
+        showCpcLogo: true,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 60),
+
+                // Logo + Titles to mirror admin login screen
+                Center(
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.mediumBlue.withOpacity(0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/cpc.png',
+                          width: 84,
+                          height: 84,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 84,
+                              height: 84,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.mediumBlue,
+                              ),
+                              child: const Icon(
+                                Icons.school,
+                                color: Colors.white,
+                                size: 40,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                Text(
+                  'DIU CPC',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.deepBlue,
+                        fontSize: 36,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+
+                Text(
+                  'DHAKA INTERNATIONAL UNIVERSITY',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.darkGray,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 1.2,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+
+                Text(
+                  'LET INFINITY BE YOUR LIMIT',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mediumBlue,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+
+                // Contact Form Card
+                _buildContactForm(),
+                const SizedBox(height: 24),
+
+                // Socials Card
+                _buildSocialMediaSection(),
+                const SizedBox(height: 24),
+
+                // Contact info card
+                _buildContactInfoSection(),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildHeaderSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.deepPurple.shade400, Colors.deepPurple.shade600],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.support_agent,
-            size: 40,
-            color: Colors.white,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Get in Touch',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Have questions or need assistance? We\'re here to help!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withOpacity(0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Removed legacy header section; header is now unified with logo/title like admin login
 
   Widget _buildContactForm() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return GlassCard(
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Send us a Message',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
-              ),
+            Text(
+              'Get in Touch',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.deepBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 20),
             TextFormField(
@@ -222,7 +255,7 @@ class _ContactScreenState extends State<ContactScreen> {
                 if (value == null || value.trim().isEmpty) {
                   return 'Please enter your email';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                if (!RegExp(r'^[\w\.-]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
                   return 'Please enter a valid email address';
                 }
                 return null;
@@ -264,35 +297,12 @@ class _ContactScreenState extends State<ContactScreen> {
               },
             ),
             const SizedBox(height: 24),
-            SizedBox(
+            GradientButton(
+              text: 'Send Message',
+              onPressed: _isSubmitting ? null : _submitForm,
+              isLoading: _isSubmitting,
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text(
-                        'Send Message',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
+              icon: Icons.send,
             ),
           ],
         ),
@@ -301,29 +311,16 @@ class _ContactScreenState extends State<ContactScreen> {
   }
 
   Widget _buildSocialMediaSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Connect with Us',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
-            ),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.mediumBlue,
+                ),
           ),
           const SizedBox(height: 16),
           Row(
@@ -405,36 +402,23 @@ class _ContactScreenState extends State<ContactScreen> {
   }
 
   Widget _buildContactInfoSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Contact Information',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
-            ),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.mediumBlue,
+                ),
           ),
           const SizedBox(height: 16),
           _buildContactInfoItem(
             icon: Icons.email,
             title: 'Email',
-            subtitle: 'cpc@daffodilvarsity.edu.bd',
-            onTap: () => _launchUrl('mailto:cpc@daffodilvarsity.edu.bd'),
+            subtitle: 'cpc@diu.edu.bd',
+            onTap: () => _launchUrl('mailto:cpc@diu.edu.bd'),
           ),
           const SizedBox(height: 12),
           _buildContactInfoItem(
@@ -447,8 +431,8 @@ class _ContactScreenState extends State<ContactScreen> {
           _buildContactInfoItem(
             icon: Icons.location_on,
             title: 'Address',
-            subtitle: 'Daffodil International University\nDhanmondi, Dhaka',
-            onTap: () => _launchUrl('https://maps.google.com/?q=Daffodil+International+University'),
+            subtitle: 'Dhaka International University\nDhaka, Bangladesh',
+            onTap: () => _launchUrl('https://maps.google.com/?q=Dhaka+International+University,+Dhaka'),
           ),
         ],
       ),
@@ -469,12 +453,12 @@ class _ContactScreenState extends State<ContactScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.1),
+              color: AppColors.mediumBlue.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: Colors.deepPurple,
+              color: AppColors.mediumBlue,
               size: 20,
             ),
           ),

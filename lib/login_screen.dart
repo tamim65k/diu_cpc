@@ -259,6 +259,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(color: Colors.deepPurple),
                   ),
                 ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    'admin access',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
               ],
             ),
           ),

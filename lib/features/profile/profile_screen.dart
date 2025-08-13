@@ -5,6 +5,10 @@ import '../../services/user_service.dart';
 import '../../services/google_sign_in_service.dart';
 import '../../services/image_upload_service.dart';
 import 'edit_profile_screen.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/gradient_background.dart';
+import '../../widgets/glass_card.dart';
+import '../../widgets/gradient_button.dart';
 
 // Removed old Sliver TabBar header and tabbed UI
 
@@ -109,10 +113,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Member Dashboard'),
-        backgroundColor: Colors.deepPurple,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Member Dashboard',
+          style: TextStyle(
+            color: AppColors.mediumBlue,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.mediumBlue),
         actions: [
           PopupMenuButton<String>(
             onSelected: (value) {
@@ -147,28 +159,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _currentUser == null
-              ? _buildErrorState()
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildProfileCard(),
-                      const SizedBox(height: 16),
-                      _buildInfoSection(),
-                      const SizedBox(height: 16),
-                      _buildUpcomingDemoSection(),
-                      const SizedBox(height: 16),
-                      _buildHistoryDemoSection(),
-                      const SizedBox(height: 16),
-                      _buildRolesSection(),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
+      body: GradientBackground(
+        useStandardBackground: true,
+        backgroundColor: AppColors.primaryBackground,
+        showCpcLogo: true,
+        child: SafeArea(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _currentUser == null
+                  ? _buildErrorState()
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 8),
+                          _buildProfileCard(),
+                          const SizedBox(height: 16),
+                          _buildInfoSection(),
+                          const SizedBox(height: 16),
+                          _buildUpcomingDemoSection(),
+                          const SizedBox(height: 16),
+                          _buildHistoryDemoSection(),
+                          const SizedBox(height: 16),
+                          _buildRolesSection(),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+        ),
+      ),
     );
   }
 
@@ -187,9 +207,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
+          GradientButton(
+            text: 'Retry',
             onPressed: _loadUserData,
-            child: const Text('Retry'),
+            icon: Icons.refresh,
           ),
         ],
       ),
@@ -197,9 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
   Widget _buildProfileCard() {
     final user = _currentUser!;
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -209,14 +228,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 CircleAvatar(
                   radius: 40,
-                  backgroundColor: Colors.deepPurple.shade50,
+                  backgroundColor: AppColors.mediumBlue.withOpacity(0.08),
                   backgroundImage: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
                       ? NetworkImage(user.profileImageUrl!)
                       : null,
                   child: (user.profileImageUrl == null || user.profileImageUrl!.isEmpty)
                       ? Text(
                           user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
-                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.mediumBlue),
                         )
                       : null,
                 ),
@@ -227,7 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: _uploadProfilePicture,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.deepPurple,
+                        color: AppColors.mediumBlue,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.white, width: 2),
                       ),
@@ -248,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Expanded(
                         child: Text(
                           user.name,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.deepBlue),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -321,15 +340,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildInfoSection() {
     final user = _currentUser!;
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Profile Information', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              'Profile Information',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.mediumBlue,
+                  ),
+            ),
             const SizedBox(height: 12),
             _infoRow(Icons.school, 'Department', user.department.isNotEmpty ? user.department : 'Not set'),
             _infoRow(Icons.badge, 'Student ID', user.studentId.isNotEmpty ? user.studentId : 'Not set'),
@@ -351,7 +374,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.deepPurple),
+          const SizedBox(width: 2),
+          Icon(icon, size: 20, color: AppColors.mediumBlue),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -400,9 +424,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required List<(String, String)> items,
     required bool primary,
   }) {
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -410,7 +432,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, color: primary ? Colors.deepPurple : Colors.grey[700]),
+                Icon(icon, color: primary ? AppColors.mediumBlue : Colors.grey[700]),
                 const SizedBox(width: 8),
                 Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               ],
@@ -424,7 +446,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: 10,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: primary ? Colors.deepPurple : Colors.grey,
+                          color: primary ? AppColors.mediumBlue : Colors.grey,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -456,15 +478,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (_currentUser!.isApproved) 'Verified',
     ];
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Badges & Roles', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+              'Badges & Roles',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.mediumBlue,
+                  ),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -472,7 +498,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: roles
                   .map((r) => Chip(
                         label: Text(r),
-                        avatar: const Icon(Icons.workspace_premium, size: 18),
+                        avatar: const Icon(Icons.workspace_premium, size: 18, color: AppColors.mediumBlue),
                       ))
                   .toList(),
             ),

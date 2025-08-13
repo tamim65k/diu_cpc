@@ -9,6 +9,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/gradient_background.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/glass_card.dart';
+import '../admin/admin_login_screen.dart';
 
 class EnhancedLoginScreen extends StatefulWidget {
   const EnhancedLoginScreen({super.key});
@@ -451,7 +452,7 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 10),
 
                 // Register Link
                 Row(
@@ -474,7 +475,23 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 0),
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AdminLoginScreen(),
+                            ),
+                          );
+                        },
+                  child: const Text(
+                    'admin access',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
 
                 // Security Notice
                 GlassCard(

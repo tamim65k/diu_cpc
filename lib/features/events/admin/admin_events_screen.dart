@@ -84,7 +84,7 @@ class _EventsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<EventModel>>(
-      stream: EventService.getAllEvents(),
+      stream: EventService.getAllEventsWithDemo(),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

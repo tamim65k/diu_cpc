@@ -74,22 +74,29 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
         title: const Text(
           'Reset Password',
           style: TextStyle(
-            color: AppColors.white,
+            color: AppColors.mediumBlue,
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.white),
+        iconTheme: const IconThemeData(color: AppColors.mediumBlue),
       ),
       body: GradientBackground(
         useStandardBackground: true,
         backgroundColor: AppColors.primaryBackground,
         showCpcLogo: true,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: _emailSent ? _buildSuccessView() : _buildResetForm(),
+          child: LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: _emailSent ? _buildSuccessView() : _buildResetForm(),
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -102,84 +109,126 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 40),
-          // DIU CPC Header
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.buttonGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.deepBlue.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+          const SizedBox(height: 60),
+          // Logo circle (same as EnhancedLoginScreen)
+          Center(
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.mediumBlue.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/cpc.png',
+                    width: 84,
+                    height: 84,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 84,
+                        height: 84,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.mediumBlue,
+                        ),
+                        child: const Icon(
+                          Icons.school,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ],
-            ),
-            child: const Icon(
-              Icons.lock_reset,
-              size: 60,
-              color: AppColors.white,
+              ),
             ),
           ),
           const SizedBox(height: 24),
-          // Title
+
+          // Titles like EnhancedLoginScreen
           Text(
-            'RESET PASSWORD',
+            'DIU CPC',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.white,
-              fontSize: 28,
-              letterSpacing: 1.5,
-              shadows: [
-                Shadow(
-                  color: AppColors.deepBlue.withOpacity(0.5),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.deepBlue,
+                  fontSize: 36,
                 ),
-              ],
-            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          // Subtitle
           Text(
-            'DIU CPC - Computer Programming Club',
+            'DHAKA INTERNATIONAL UNIVERSITY',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.white.withOpacity(0.9),
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.2,
-            ),
+                  color: AppColors.darkGray,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.2,
+                ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 40),
-          // Email Field
-          TextFormField(
-            controller: _emailController,
-            decoration: const InputDecoration(
-              labelText: 'Email Address',
-              prefixIcon: Icon(Icons.email),
-              border: OutlineInputBorder(),
+          const SizedBox(height: 4),
+          Text(
+            'LET INFINITY BE YOUR LIMIT',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.mediumBlue,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.5,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 48),
+
+          // Reset form in GlassCard
+          GlassCard(
+            child: Column(
+              children: [
+                Text(
+                  'Reset Password',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: AppColors.deepBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 24),
+
+                TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Address',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: Validators.validateEmail,
+                  keyboardType: TextInputType.emailAddress,
+                  enabled: !_isLoading,
+                ),
+                const SizedBox(height: 24),
+
+                GradientButton(
+                  text: 'Send Reset Email',
+                  onPressed: _sendPasswordResetEmail,
+                  isLoading: _isLoading,
+                  width: double.infinity,
+                  icon: Icons.email,
+                ),
+                const SizedBox(height: 12),
+
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Back to Login'),
+                ),
+              ],
             ),
-            validator: Validators.validateEmail,
-            keyboardType: TextInputType.emailAddress,
-            enabled: !_isLoading,
-          ),
-          const SizedBox(height: 24),
-          // Send Reset Email Button
-          GradientButton(
-            text: 'Send Reset Email',
-            onPressed: _sendPasswordResetEmail,
-            isLoading: _isLoading,
-            width: double.infinity,
-            icon: Icons.email,
-          ),
-          const SizedBox(height: 16),
-          // Back to Login Button
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Back to Login'),
           ),
         ],
       ),

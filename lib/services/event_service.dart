@@ -42,6 +42,19 @@ class EventService {
             .toList());
   }
 
+  // Get all events with demo fallback (combines upcoming + past demo)
+  static Stream<List<EventModel>> getAllEventsWithDemo() {
+    final base = getAllEvents();
+    return _withDemoOnEmptyOrError(
+      base,
+      () {
+        final up = DemoEventData.upcoming();
+        final past = DemoEventData.past();
+        return [...up, ...past];
+      },
+    );
+  }
+
   // For demo mode when not logged in or no registrations, return some upcoming demo as placeholder
   static Stream<List<EventModel>> getUserRegisteredEventsWithDemo() {
     final base = getUserRegisteredEvents();

@@ -1,0 +1,103 @@
+import 'package:diu_cpc/models/user_model.dart';
+
+class DemoUserData {
+  static List<UserModel> all() {
+    final now = DateTime.now();
+    return [
+      UserModel(
+        uid: 'u_demo_1',
+        name: 'Alice Rahman',
+        email: 'alice@example.com',
+        phone: '01700111222',
+        department: 'CSE',
+        academicYear: '3rd Year',
+        studentId: 'DIU-123456',
+        batch: '65th',
+        bloodGroup: 'A+',
+        emergencyContact: '01700999888',
+        address: 'Dhaka',
+        bio: 'Flutter enthusiast',
+        dateOfBirth: DateTime(2002, 5, 14),
+        socialLinks: const {'github': 'alicehub'},
+        createdAt: now.subtract(const Duration(days: 120)),
+        updatedAt: now.subtract(const Duration(days: 5)),
+        isApproved: true,
+        isEmailVerified: true,
+        membershipStatus: MembershipStatus.approved,
+        profileImageUrl: null,
+      ),
+      UserModel(
+        uid: 'u_demo_2',
+        name: 'Bashir Khan',
+        email: 'bashir@example.com',
+        phone: '01822123456',
+        department: 'SWE',
+        academicYear: '2nd Year',
+        studentId: 'DIU-654321',
+        batch: '66th',
+        bloodGroup: 'O+',
+        emergencyContact: '01822123457',
+        address: 'Dhaka',
+        bio: 'Competitive programmer',
+        dateOfBirth: DateTime(2003, 9, 1),
+        socialLinks: const {'codeforces': 'bashir_cf'},
+        createdAt: now.subtract(const Duration(days: 40)),
+        updatedAt: now.subtract(const Duration(days: 2)),
+        isApproved: false,
+        isEmailVerified: true,
+        membershipStatus: MembershipStatus.pending,
+        profileImageUrl: null,
+      ),
+      UserModel(
+        uid: 'u_demo_3',
+        name: 'Chhanda Saha',
+        email: 'chhanda@example.com',
+        phone: '01611222333',
+        department: 'CSE',
+        academicYear: '4th Year',
+        studentId: 'DIU-777888',
+        batch: '64th',
+        bloodGroup: 'B-',
+        emergencyContact: '01611222999',
+        address: 'Gazipur',
+        bio: 'UI/UX and mobile dev',
+        dateOfBirth: DateTime(2001, 12, 2),
+        socialLinks: const {'linkedin': 'chhanda'},
+        createdAt: now.subtract(const Duration(days: 300)),
+        updatedAt: now.subtract(const Duration(days: 1)),
+        isApproved: false,
+        isEmailVerified: false,
+        membershipStatus: MembershipStatus.suspended,
+        profileImageUrl: null,
+      ),
+      UserModel(
+        uid: 'u_demo_4',
+        name: 'Dipto Roy',
+        email: 'dipto@example.com',
+        phone: '01555666777',
+        department: 'CSE',
+        academicYear: '1st Year',
+        studentId: 'DIU-909090',
+        batch: '67th',
+        bloodGroup: 'AB+',
+        emergencyContact: '01555666999',
+        address: 'Dhaka',
+        bio: 'DSA learner',
+        dateOfBirth: DateTime(2005, 3, 21),
+        socialLinks: const {},
+        createdAt: now.subtract(const Duration(days: 10)),
+        updatedAt: now.subtract(const Duration(days: 1)),
+        isApproved: false,
+        isEmailVerified: false,
+        membershipStatus: MembershipStatus.rejected,
+        profileImageUrl: null,
+      ),
+    ];
+  }
+
+  static List<UserModel> byStatus(MembershipStatus status) {
+    return all().where((u) => u.membershipStatus == status).toList();
+  }
+
+  static int countApproved() => byStatus(MembershipStatus.approved).length;
+}
