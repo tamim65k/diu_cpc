@@ -1,11 +1,35 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/event_model.dart';
+import 'demo_event_data.dart';
 
 class EventService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
   static const String _eventsCollection = 'events';
+
+  // Helper: return demo data (3 items) when stream errors or comes back empty
+  static Stream<List<EventModel>> _withDemoOnEmptyOrError(
+    Stream<List<EventModel>> base,
+    List<EventModel> Function() demo,
+  ) {
+    return base.transform(
+      StreamTransformer.fromHandlers(
+        handleData: (events, sink) {
+          if (events.isEmpty) {
+            sink.add(demo().take(3).toList());
+          } else {
+            sink.add(events);
+          }
+        },
+        handleError: (error, stackTrace, sink) {
+          // On any Firestore error (e.g., missing index, rules), show demo content
+          sink.add(demo().take(3).toList());
+        },
+      ),
+    );
+  }
 
   // Get all events
   static Stream<List<EventModel>> getAllEvents() {
@@ -16,6 +40,12 @@ class EventService {
         .map((snapshot) => snapshot.docs
             .map((doc) => EventModel.fromFirestore(doc))
             .toList());
+  }
+
+  // For demo mode when not logged in or no registrations, return some upcoming demo as placeholder
+  static Stream<List<EventModel>> getUserRegisteredEventsWithDemo() {
+    final base = getUserRegisteredEvents();
+    return _withDemoOnEmptyOrError(base, () => DemoEventData.upcoming());
   }
 
   // Get upcoming events
@@ -31,6 +61,11 @@ class EventService {
             .toList());
   }
 
+  // Get upcoming events with demo fallback
+  static Stream<List<EventModel>> getUpcomingEventsWithDemo() {
+    return _withDemoOnEmptyOrError(getUpcomingEvents(), () => DemoEventData.upcoming());
+  }
+
   // Get past events
   static Stream<List<EventModel>> getPastEvents() {
     return _firestore
@@ -41,6 +76,11 @@ class EventService {
         .map((snapshot) => snapshot.docs
             .map((doc) => EventModel.fromFirestore(doc))
             .toList());
+  }
+
+  // Get past events with demo fallback
+  static Stream<List<EventModel>> getPastEventsWithDemo() {
+    return _withDemoOnEmptyOrError(getPastEvents(), () => DemoEventData.past());
   }
 
   // Get events by category
@@ -303,6 +343,46 @@ class EventService {
       });
     } catch (e) {
       throw Exception('Failed to update event status: $e');
+    }
+  }
+
+  // Admin: approve event
+  static Future<void> approveEvent(String eventId) async {
+    try {
+      await _firestore.collection(_eventsCollection).doc(eventId).update({
+        'status': 'upcoming',
+        'updatedAt': Timestamp.now(),
+        'additionalInfo.approvalStatus': 'approved',
+      });
+    } catch (e) {
+      throw Exception('Failed to approve event: $e');
+    }
+  }
+
+  // Admin: reject event
+  static Future<void> rejectEvent(String eventId, {String? reason}) async {
+    try {
+      await _firestore.collection(_eventsCollection).doc(eventId).update({
+        'status': 'cancelled',
+        'updatedAt': Timestamp.now(),
+        'additionalInfo.approvalStatus': 'rejected',
+        if (reason != null) 'additionalInfo.rejectionReason': reason,
+      });
+    } catch (e) {
+      throw Exception('Failed to reject event: $e');
+    }
+  }
+
+  // Admin: cancel event
+  static Future<void> cancelEvent(String eventId, {String? reason}) async {
+    try {
+      await _firestore.collection(_eventsCollection).doc(eventId).update({
+        'status': 'cancelled',
+        'updatedAt': Timestamp.now(),
+        if (reason != null) 'additionalInfo.cancellationReason': reason,
+      });
+    } catch (e) {
+      throw Exception('Failed to cancel event: $e');
     }
   }
 

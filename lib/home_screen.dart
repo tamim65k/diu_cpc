@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'models/user_model.dart';
@@ -5,6 +6,7 @@ import 'models/event_model.dart';
 import 'services/event_service.dart';
 import 'services/user_service.dart';
 import 'services/google_sign_in_service.dart';
+import 'services/demo_event_data.dart';
 import 'features/events/events_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/announcements/announcements_screen.dart';
@@ -24,11 +26,47 @@ class _HomeScreenState extends State<HomeScreen> {
   UserModel? _currentUser;
   List<EventModel> _upcomingEvents = [];
   bool _isLoading = true;
+  // Carousel state
+  final PageController _carouselCtrl = PageController(viewportFraction: 1.0);
+  int _carouselIndex = 0;
+  Timer? _carouselTimer;
+  List<EventModel> _carouselEvents = [];
+  // Feature flag to show/hide hero carousel
+  final bool _enableHeroCarousel = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    // Prepare demo images for hero carousel (3 upcoming demo images)
+    final demo = DemoEventData.upcoming().take(3).toList();
+    _carouselEvents = demo;
+    // Ensure PageView is mounted before starting (disabled when hidden)
+    if (_enableHeroCarousel) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startCarousel());
+    }
+  }
+
+  void _startCarousel() {
+    _carouselTimer?.cancel();
+    if (_carouselEvents.isEmpty) return;
+    _carouselTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted || _carouselEvents.isEmpty) return;
+      if (!_carouselCtrl.hasClients) return;
+      _carouselIndex = (_carouselIndex + 1) % _carouselEvents.length;
+      _carouselCtrl.animateToPage(
+        _carouselIndex,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _carouselTimer?.cancel();
+    _carouselCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -38,11 +76,13 @@ class _HomeScreenState extends State<HomeScreen> {
       
       // Try to load events, but handle permission errors gracefully
       try {
-        EventService.getUpcomingEvents().take(1).listen(
+        EventService.getUpcomingEventsWithDemo().take(1).listen(
           (events) {
             if (mounted) {
+              // For homepage upcoming section, use demo events only
+              final demo = DemoEventData.upcoming().take(5).toList();
               setState(() {
-                _upcomingEvents = events.take(5).toList();
+                _upcomingEvents = demo;
                 _isLoading = false;
               });
             }
@@ -50,8 +90,9 @@ class _HomeScreenState extends State<HomeScreen> {
           onError: (error) {
             print('Events loading error (permission denied): $error');
             if (mounted) {
+              final demo = DemoEventData.upcoming();
               setState(() {
-                _upcomingEvents = []; // Empty list if permission denied
+                _upcomingEvents = demo.take(3).toList();
                 _isLoading = false;
               });
             }
@@ -219,7 +260,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeroSection(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(20),
-      height: 200,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
@@ -253,10 +293,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Text(
                   'Welcome back, ${_currentUser?.name ?? 'Member'}!',
@@ -274,20 +314,121 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.white.withOpacity(0.9),
                   ),
                 ),
-                const SizedBox(height: 20),
-                if (_upcomingEvents.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Next Event: ${_upcomingEvents.first.title}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                // Demo upcoming carousel (hidden by request)
+                if (_enableHeroCarousel && _carouselEvents.isNotEmpty)
+                  SizedBox(
+                    height: 120,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        children: [
+                          PageView.builder(
+                            controller: _carouselCtrl,
+                            itemCount: _carouselEvents.length,
+                            onPageChanged: (i) => setState(() => _carouselIndex = i),
+                            itemBuilder: (context, i) {
+                              final ev = _carouselEvents[i];
+                              return Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  if (ev.imageUrl != null)
+                                    Image.network(
+                                      ev.imageUrl!,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, progress) => progress == null
+                                          ? child
+                                          : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                      errorBuilder: (context, error, stack) => Container(
+                                        color: Colors.black26,
+                                        alignment: Alignment.center,
+                                        child: const Icon(Icons.broken_image, color: Colors.white70),
+                                      ),
+                                    )
+                                  else
+                                    Container(color: Colors.black26),
+                                  // Gradient overlay
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black54,
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Text content
+                                  Positioned(
+                                    left: 12,
+                                    right: 12,
+                                    bottom: 12,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          ev.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.calendar_today, size: 12, color: Colors.white70),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              ev.getFormattedDate(),
+                                              style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            const Icon(Icons.location_on, size: 12, color: Colors.white70),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                ev.venue,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          // Dots indicator
+                          Positioned(
+                            bottom: 8,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(_carouselEvents.length, (i) {
+                                final active = i == _carouselIndex;
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: active ? 10 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: active ? Colors.white : Colors.white54,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                );
+                              }),
+                            ),
+                          )
+                        ],
                       ),
                     ),
                   ),
@@ -533,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEventsCarousel() {
     return SizedBox(
-      height: 200,
+      height: 230,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: _upcomingEvents.length,
@@ -545,62 +686,96 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Card(
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      event.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image header
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
+                    child: SizedBox(
+                      height: 90,
+                      width: double.infinity,
+                      child: (event.imageUrl != null && event.imageUrl!.isNotEmpty)
+                          ? Image.network(
+                              event.imageUrl!,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, progress) => progress == null
+                                  ? child
+                                  : const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                              errorBuilder: (context, error, stack) => Container(
+                                color: Colors.grey[300],
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.broken_image, color: Colors.grey),
+                              ),
+                            )
+                          : Container(color: Colors.grey[200]),
+                    ),
+                  ),
+                  // Text content
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
                         Text(
-                          event.getFormattedDate(),
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          event.title,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.location_on, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            event.venue,
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Text(
+                              event.getFormattedDate(),
+                              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                event.venue,
+                                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const EventsScreen()),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              minimumSize: const Size(double.infinity, 32),
+                              ),
+                            child: const Text('View Details', style: TextStyle(color: Colors.white)),
                           ),
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const EventsScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        minimumSize: const Size(double.infinity, 36),
-                      ),
-                      child: const Text('View Details', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );

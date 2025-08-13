@@ -4,6 +4,7 @@ import '../../services/event_service.dart';
 import 'event_details_screen.dart';
 import 'past_events_archive_screen.dart';
 import 'widgets/event_card.dart';
+import 'admin/admin_events_screen.dart';
 import 'widgets/event_filter_chip.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -69,9 +70,11 @@ class _EventsScreenState extends State<EventsScreen>
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Navigate to create event screen (admin only)
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Create event feature coming soon!')),
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminEventsScreen(),
+            ),
           );
         },
         backgroundColor: Colors.deepPurple,
@@ -160,7 +163,7 @@ class _EventsScreenState extends State<EventsScreen>
 
   Widget _buildUpcomingEvents() {
     return StreamBuilder<List<EventModel>>(
-      stream: EventService.getUpcomingEvents(),
+      stream: EventService.getUpcomingEventsWithDemo(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -238,7 +241,7 @@ class _EventsScreenState extends State<EventsScreen>
 
   Widget _buildPastEvents() {
     return StreamBuilder<List<EventModel>>(
-      stream: EventService.getPastEvents(),
+      stream: EventService.getPastEventsWithDemo(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -357,7 +360,7 @@ class _EventsScreenState extends State<EventsScreen>
 
   Widget _buildMyEvents() {
     return StreamBuilder<List<EventModel>>(
-      stream: EventService.getUserRegisteredEvents(),
+      stream: EventService.getUserRegisteredEventsWithDemo(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

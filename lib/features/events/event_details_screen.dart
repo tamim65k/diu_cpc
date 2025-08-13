@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
+import '../../services/notification_service.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final EventModel event;
@@ -24,6 +26,116 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   void initState() {
     super.initState();
     _checkRegistrationStatus();
+  }
+
+  Widget _buildLocationMap() {
+    if (widget.event.venue.isEmpty && (widget.event.location == null || widget.event.location!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Location',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on, color: Colors.deepPurple),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.event.venue,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ElevatedButton.icon(
+                onPressed: _openInMaps,
+                icon: const Icon(Icons.map),
+                label: const Text('Open in Maps'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openInMaps() async {
+    final loc = widget.event.location;
+    String query;
+    if (loc != null && loc.contains(',')) {
+      query = loc; // lat,lng
+    } else {
+      query = widget.event.venue;
+    }
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open map')),
+        );
+      }
+    }
+  }
+
+  Widget _buildMediaGallery() {
+    final media = (widget.event.additionalInfo?['mediaUrls'] as List?)?.cast<String>() ?? const <String>[];
+    if (media.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Photos & Videos',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 100,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: media.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final url = media[index];
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) => Container(
+                      color: Colors.grey[200],
+                      width: 160,
+                      child: const Icon(Icons.broken_image),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   void _checkRegistrationStatus() {
@@ -52,6 +164,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   const SizedBox(height: 24),
                   _buildEventDetails(),
                   const SizedBox(height: 24),
+                  _buildLocationMap(),
+                  const SizedBox(height: 24),
                   _buildDescription(),
                   const SizedBox(height: 24),
                   _buildAgenda(),
@@ -59,6 +173,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   _buildSpeakers(),
                   const SizedBox(height: 24),
                   _buildRequirements(),
+                  const SizedBox(height: 24),
+                  _buildMediaGallery(),
                   const SizedBox(height: 24),
                   _buildOrganizer(),
                   const SizedBox(height: 100), // Space for FAB
@@ -479,6 +595,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         setState(() {
           _isRegistered = true;
         });
+        NotificationService().push(
+          title: 'Registered',
+          message: 'You are registered for ${widget.event.title}',
+          color: Colors.green,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -491,6 +612,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         setState(() {
           _isOnWaitlist = true;
         });
+        NotificationService().push(
+          title: 'Waitlisted',
+          message: 'Added to waitlist for ${widget.event.title}',
+          color: Colors.orange,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -530,6 +656,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         _isRegistered = false;
         _isOnWaitlist = false;
       });
+      NotificationService().push(
+        title: 'Unregistered',
+        message: 'You have unregistered from ${widget.event.title}',
+        color: Colors.blue,
+      );
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

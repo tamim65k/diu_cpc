@@ -238,7 +238,7 @@ class _PastEventsArchiveScreenState extends State<PastEventsArchiveScreen> {
 
   Widget _buildPastEventsList() {
     return StreamBuilder<List<EventModel>>(
-      stream: EventService.getPastEvents(),
+      stream: EventService.getPastEventsWithDemo(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
