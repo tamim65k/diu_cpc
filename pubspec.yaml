@@ -45,6 +45,9 @@ dependencies:
   # Image handling dependencies
   image_picker: ^1.0.7
   path: ^1.8.3
+  
+  # URL launcher for external links
+  url_launcher: ^6.2.4
 
 dev_dependencies:
   flutter_test:

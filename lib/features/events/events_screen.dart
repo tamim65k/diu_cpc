@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import 'event_details_screen.dart';
+import 'past_events_archive_screen.dart';
 import 'widgets/event_card.dart';
 import 'widgets/event_filter_chip.dart';
 
@@ -278,25 +279,77 @@ class _EventsScreenState extends State<EventsScreen>
                     color: Colors.grey[600],
                   ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  'Past events will appear here once completed',
+                  style: TextStyle(color: Colors.grey[500]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PastEventsArchiveScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.archive),
+                  label: const Text('View Full Archive'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
               ],
             ),
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16.0),
-          itemCount: events.length,
-          itemBuilder: (context, index) {
-            final event = events[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: EventCard(
-                event: event,
-                onTap: () => _navigateToEventDetails(event),
-                showCountdown: false,
+        return Column(
+          children: [
+            // Archive button at the top
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PastEventsArchiveScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.archive),
+                label: const Text('View Complete Archive'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
-            );
-          },
+            ),
+            // Recent past events
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: events.take(5).length, // Show only recent 5 events
+                itemBuilder: (context, index) {
+                  final event = events[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: EventCard(
+                      event: event,
+                      onTap: () => _navigateToEventDetails(event),
+                      showCountdown: false,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );

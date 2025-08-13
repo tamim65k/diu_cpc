@@ -13,7 +13,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -40,14 +40,14 @@ class ProfileHeader extends StatelessWidget {
     return Stack(
       children: [
         CircleAvatar(
-          radius: 50,
+          radius: 44,
           backgroundColor: Colors.white,
           child: user.profileImageUrl != null
               ? ClipOval(
                   child: Image.network(
                     user.profileImageUrl!,
-                    width: 96,
-                    height: 96,
+                    width: 88,
+                    height: 88,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return _buildDefaultAvatar();
@@ -78,8 +78,8 @@ class ProfileHeader extends StatelessWidget {
 
   Widget _buildDefaultAvatar() {
     return Container(
-      width: 96,
-      height: 96,
+      width: 88,
+      height: 88,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: LinearGradient(
@@ -125,18 +125,46 @@ class ProfileHeader extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        if (user.department.isNotEmpty) ...[
-          const SizedBox(height: 4),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (user.department.isNotEmpty || user.academicYear.isNotEmpty)
+              _infoChip(
+                '${user.department}${user.department.isNotEmpty && user.academicYear.isNotEmpty ? ' • ' : ''}${user.academicYear}',
+                Icons.school,
+              ),
+            if (user.studentId.isNotEmpty)
+              _infoChip('ID: ${user.studentId}', Icons.badge),
+            if (user.phone.isNotEmpty)
+              _infoChip(user.phone, Icons.phone),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _infoChip(String text, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
           Text(
-            '${user.department} • ${user.academicYear}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
+            text,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
           ),
         ],
-      ],
+      ),
     );
   }
 

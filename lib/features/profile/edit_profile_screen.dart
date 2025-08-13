@@ -27,6 +27,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _phoneController = TextEditingController();
   final _departmentController = TextEditingController();
   final _academicYearController = TextEditingController();
+  final _studentIdController = TextEditingController();
+  final _batchController = TextEditingController();
+  final _bloodGroupController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _bioController = TextEditingController();
   
   bool _isLoading = false;
   bool _isUploadingImage = false;
@@ -44,6 +50,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.dispose();
     _departmentController.dispose();
     _academicYearController.dispose();
+    _studentIdController.dispose();
+    _batchController.dispose();
+    _bloodGroupController.dispose();
+    _emergencyContactController.dispose();
+    _addressController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -52,6 +64,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.text = widget.user.phone;
     _departmentController.text = widget.user.department;
     _academicYearController.text = widget.user.academicYear;
+    _studentIdController.text = widget.user.studentId;
+    _batchController.text = widget.user.batch;
+    _bloodGroupController.text = widget.user.bloodGroup;
+    _emergencyContactController.text = widget.user.emergencyContact;
+    _addressController.text = widget.user.address;
+    _bioController.text = widget.user.bio;
   }
 
   @override
@@ -86,6 +104,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               _buildPersonalInfoSection(),
               const SizedBox(height: 24),
               _buildAcademicInfoSection(),
+              const SizedBox(height: 24),
+              _buildAdditionalInfoSection(),
               const SizedBox(height: 32),
               _buildSaveButton(),
             ],
@@ -243,6 +263,83 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _buildAdditionalInfoSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Additional Information',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _studentIdController,
+          decoration: const InputDecoration(
+            labelText: 'Student ID',
+            prefixIcon: Icon(Icons.badge),
+            border: OutlineInputBorder(),
+          ),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _batchController,
+          decoration: const InputDecoration(
+            labelText: 'Batch',
+            prefixIcon: Icon(Icons.group),
+            border: OutlineInputBorder(),
+          ),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _bloodGroupController,
+          decoration: const InputDecoration(
+            labelText: 'Blood Group',
+            prefixIcon: Icon(Icons.health_and_safety),
+            border: OutlineInputBorder(),
+          ),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _emergencyContactController,
+          decoration: const InputDecoration(
+            labelText: 'Emergency Contact',
+            prefixIcon: Icon(Icons.contact_phone),
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.phone,
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _addressController,
+          decoration: const InputDecoration(
+            labelText: 'Address',
+            prefixIcon: Icon(Icons.home),
+            border: OutlineInputBorder(),
+          ),
+          textInputAction: TextInputAction.next,
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _bioController,
+          decoration: const InputDecoration(
+            labelText: 'Bio',
+            prefixIcon: Icon(Icons.info_outline),
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+          textInputAction: TextInputAction.newline,
+        ),
+      ],
+    );
+  }
+
   Widget _buildAcademicInfoSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,6 +468,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'phone': _phoneController.text.trim(),
         'department': _departmentController.text,
         'academicYear': _academicYearController.text,
+        'studentId': _studentIdController.text.trim(),
+        'batch': _batchController.text.trim(),
+        'bloodGroup': _bloodGroupController.text.trim(),
+        'emergencyContact': _emergencyContactController.text.trim(),
+        'address': _addressController.text.trim(),
+        'bio': _bioController.text.trim(),
         'updatedAt': Timestamp.now(),
       };
 

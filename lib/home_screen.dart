@@ -8,6 +8,7 @@ import 'services/google_sign_in_service.dart';
 import 'features/events/events_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/announcements/announcements_screen.dart';
+import 'features/contact/contact_screen.dart';
 import 'widgets/gradient_background.dart';
 import 'theme/app_colors.dart';
 import 'models/event_model.dart';
@@ -359,12 +360,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildActionCard(
                 icon: Icons.support_agent,
-                title: 'Support',
+                title: 'Contact & Support',
                 subtitle: 'Get Help',
                 color: Colors.purple,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Support system coming soon!')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ContactScreen()),
                   );
                 },
               ),

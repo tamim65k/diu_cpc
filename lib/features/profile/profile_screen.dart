@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
-import '../../models/event_model.dart';
-import '../../models/badge_model.dart';
-import '../../services/event_service.dart';
 import '../../services/user_service.dart';
-import '../../services/badge_service.dart';
 import '../../services/google_sign_in_service.dart';
-import '../../widgets/badge_widgets.dart';
-import 'widgets/profile_header.dart';
-import 'widgets/profile_stats_card.dart';
-import 'widgets/event_history_card.dart';
+import '../../services/image_upload_service.dart';
 import 'edit_profile_screen.dart';
+
+// Removed old Sliver TabBar header and tabbed UI
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -20,24 +15,18 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _currentUser;
   bool _isLoading = true;
-  List<UserBadgeModel> _userBadges = [];
-  Map<String, int> _badgeStats = {};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
     _loadUserData();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -66,10 +55,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _currentUser = userProfile;
         });
-        
-        // Load user badges and stats
-        await _loadUserBadges(user.uid);
-        
         setState(() {
           _isLoading = false;
         });
@@ -121,45 +106,33 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  Future<void> _loadUserBadges(String userId) async {
-    try {
-      // Check and award automatic badges
-      await BadgeService.checkAndAwardAutomaticBadges(userId);
-      
-      // Load user badges
-      final badges = await BadgeService.getUserBadges(userId);
-      final stats = await BadgeService.getUserBadgeStats(userId);
-      
-      setState(() {
-        _userBadges = badges;
-        _badgeStats = stats;
-      });
-    } catch (e) {
-      print('Error loading user badges: $e');
-      // Don't show error to user as badges are not critical
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('Member Dashboard'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _navigateToEditProfile(),
-            tooltip: 'Edit Profile',
-          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'logout') {
                 _signOut();
+              } else if (value == 'edit') {
+                _navigateToEditProfile();
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: Colors.blueGrey),
+                    SizedBox(width: 8),
+                    Text('Edit Info'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -178,24 +151,23 @@ class _ProfileScreenState extends State<ProfileScreen>
           ? const Center(child: CircularProgressIndicator())
           : _currentUser == null
               ? _buildErrorState()
-              : Column(
-                  children: [
-                    ProfileHeader(user: _currentUser!),
-                    const SizedBox(height: 16),
-                    ProfileStatsCard(userId: _currentUser!.uid),
-                    const SizedBox(height: 16),
-                    _buildTabBar(),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildUpcomingEvents(),
-                          _buildEventHistory(),
-                          _buildAchievements(),
-                        ],
-                      ),
-                    ),
-                  ],
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildProfileCard(),
+                      const SizedBox(height: 16),
+                      _buildInfoSection(),
+                      const SizedBox(height: 16),
+                      _buildUpcomingDemoSection(),
+                      const SizedBox(height: 16),
+                      _buildHistoryDemoSection(),
+                      const SizedBox(height: 16),
+                      _buildRolesSection(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
     );
   }
@@ -223,326 +195,287 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
-
-  Widget _buildTabBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        indicator: BoxDecoration(
-          borderRadius: BorderRadius.circular(25),
-          color: Colors.deepPurple,
-        ),
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.grey[600],
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-        tabs: const [
-          Tab(text: 'Upcoming'),
-          Tab(text: 'History'),
-          Tab(text: 'Achievements'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpcomingEvents() {
-    return StreamBuilder<List<EventModel>>(
-      stream: EventService.getUserRegisteredEvents(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildProfileCard() {
+    final user = _currentUser!;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading events',
-                  style: TextStyle(color: Colors.grey[600]),
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.deepPurple.shade50,
+                  backgroundImage: user.profileImageUrl != null && user.profileImageUrl!.isNotEmpty
+                      ? NetworkImage(user.profileImageUrl!)
+                      : null,
+                  child: (user.profileImageUrl == null || user.profileImageUrl!.isEmpty)
+                      ? Text(
+                          user.name.isNotEmpty ? user.name[0].toUpperCase() : 'U',
+                          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                        )
+                      : null,
                 ),
-              ],
-            ),
-          );
-        }
-
-        final upcomingEvents = (snapshot.data ?? [])
-            .where((event) => event.isUpcoming)
-            .toList();
-
-        if (upcomingEvents.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.event_available, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'No upcoming events',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: InkWell(
+                    onTap: _uploadProfilePicture,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Register for events to see them here!',
-                  style: TextStyle(color: Colors.grey[500]),
-                ),
+                )
               ],
             ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: upcomingEvents.length,
-          itemBuilder: (context, index) {
-            final event = upcomingEvents[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: EventHistoryCard(
-                event: event,
-                showStatus: false,
-                showCountdown: true,
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildEventHistory() {
-    return StreamBuilder<List<EventModel>>(
-      stream: EventService.getUserRegisteredEvents(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 48, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'Error loading event history',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final pastEvents = (snapshot.data ?? [])
-            .where((event) => event.isCompleted)
-            .toList();
-
-        if (pastEvents.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.history, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text(
-                  'No event history',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Your completed events will appear here',
-                  style: TextStyle(color: Colors.grey[500]),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: pastEvents.length,
-          itemBuilder: (context, index) {
-            final event = pastEvents[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: EventHistoryCard(
-                event: event,
-                showStatus: true,
-                showCountdown: false,
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildAchievements() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Membership Status Badge
-          if (_currentUser != null) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                MembershipStatusBadge(
-                  status: _currentUser!.membershipStatus,
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
-          
-          // Badge Statistics
-          if (_badgeStats.isNotEmpty) ...[
-            BadgeStatsCard(stats: _badgeStats),
-            const SizedBox(height: 20),
-          ],
-          
-          // Badges Section
-          const Text(
-            'Your Badges',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // User Badges Display
-          if (_userBadges.isNotEmpty)
+            const SizedBox(width: 16),
             Expanded(
-              child: BadgeGrid(
-                badges: _userBadges,
-                maxDisplay: 20, // Show more badges in profile
-                showDetails: true,
-                onBadgeTap: (userBadge) {
-                  showDialog(
-                    context: context,
-                    builder: (context) => BadgeDetailsDialog(userBadge: userBadge),
-                  );
-                },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          user.name,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      _membershipChip(user.membershipStatus),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(user.email, style: TextStyle(color: Colors.grey[700])),
+                  if (user.phone.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(user.phone, style: TextStyle(color: Colors.grey[700])),
+                  ],
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _navigateToEditProfile,
+                        icon: const Icon(Icons.edit),
+                        label: const Text('Edit Info'),
+                      ),
+                    ],
+                  )
+                ],
               ),
             )
-          else
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.emoji_events_outlined,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No badges earned yet',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Complete your profile and participate in events to earn badges!',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _membershipChip(MembershipStatus status) {
+    Color color;
+    String text;
+    switch (status) {
+      case MembershipStatus.approved:
+        color = Colors.green;
+        text = 'Approved';
+        break;
+      case MembershipStatus.rejected:
+        color = Colors.red;
+        text = 'Rejected';
+        break;
+      case MembershipStatus.suspended:
+        color = Colors.orange;
+        text = 'Suspended';
+        break;
+      case MembershipStatus.pending:
+        color = Colors.blueGrey;
+        text = 'Pending';
+        break;
+    }
+    return Container(
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.verified, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(text, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 
-  Widget _buildAchievementCard(
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    {bool isEarned = false}
-  ) {
+  Widget _buildInfoSection() {
+    final user = _currentUser!;
     return Card(
-      elevation: isEarned ? 4 : 2,
-      child: Container(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: isEarned ? color.withOpacity(0.1) : Colors.grey[50],
-          border: Border.all(
-            color: isEarned ? color.withOpacity(0.3) : Colors.grey[300]!,
-            width: isEarned ? 2 : 1,
-          ),
-        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              size: 32,
-              color: isEarned ? color : Colors.grey[400],
+            const Text('Profile Information', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            _infoRow(Icons.school, 'Department', user.department.isNotEmpty ? user.department : 'Not set'),
+            _infoRow(Icons.badge, 'Student ID', user.studentId.isNotEmpty ? user.studentId : 'Not set'),
+            _infoRow(Icons.class_, 'Batch', user.batch.isNotEmpty ? user.batch : 'Not set'),
+            _infoRow(Icons.timeline, 'Academic Year', user.academicYear.isNotEmpty ? user.academicYear : 'Not set'),
+            _infoRow(Icons.bloodtype, 'Blood Group', user.bloodGroup.isNotEmpty ? user.bloodGroup : 'Not set'),
+            _infoRow(Icons.phone, 'Emergency Contact', user.emergencyContact.isNotEmpty ? user.emergencyContact : 'Not set'),
+            _infoRow(Icons.location_on, 'Address', user.address.isNotEmpty ? user.address : 'Not set'),
+            if (user.bio.isNotEmpty) _infoRow(Icons.info_outline, 'Bio', user.bio),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Colors.deepPurple),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(value, style: TextStyle(color: Colors.grey[700])),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: isEarned ? color : Colors.grey[600],
-              ),
-              textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingDemoSection() {
+    return _demoListSection(
+      title: 'Upcoming Registrations',
+      icon: Icons.event_available,
+      items: const [
+        ('Code Sprint 2025', 'Aug 20, 2025 • 10:00 AM'),
+        ('Flutter Workshop', 'Aug 25, 2025 • 2:00 PM'),
+        ('AI Meetup', 'Sep 1, 2025 • 5:00 PM'),
+      ],
+      primary: true,
+    );
+  }
+
+  Widget _buildHistoryDemoSection() {
+    return _demoListSection(
+      title: 'Event Participation History',
+      icon: Icons.history,
+      items: const [
+        ('Hackathon 2025', 'Participated • Jul 10, 2025'),
+        ('DSA Contest', 'Completed • Jun 18, 2025'),
+        ('Tech Talk', 'Attended • May 30, 2025'),
+      ],
+      primary: false,
+    );
+  }
+
+  Widget _demoListSection({
+    required String title,
+    required IconData icon,
+    required List<(String, String)> items,
+    required bool primary,
+  }) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: primary ? Colors.deepPurple : Colors.grey[700]),
+                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+              ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              style: TextStyle(
-                fontSize: 12,
-                color: isEarned ? Colors.grey[700] : Colors.grey[500],
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (isEarned) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Text(
-                  'Earned',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
+            const SizedBox(height: 12),
+            ...items.map((e) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: primary ? Colors.deepPurple : Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(e.$1, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text(e.$2, style: TextStyle(color: Colors.grey[700])),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
-            ],
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRolesSection() {
+    final status = _currentUser!.membershipStatus;
+    final isApproved = status == MembershipStatus.approved;
+    final roles = <String>[
+      isApproved ? 'Regular Member' : 'Pending Member',
+      if (_currentUser!.isApproved) 'Verified',
+    ];
+
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Badges & Roles', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: roles
+                  .map((r) => Chip(
+                        label: Text(r),
+                        avatar: const Icon(Icons.workspace_premium, size: 18),
+                      ))
+                  .toList(),
+            ),
           ],
         ),
       ),
@@ -550,19 +483,75 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _navigateToEditProfile() {
-    if (_currentUser != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => EditProfileScreen(user: _currentUser!),
-        ),
-      ).then((updated) {
-        if (updated == true) {
-          _loadUserData(); // Reload user data if profile was updated
-        }
-      });
+    if (_currentUser == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(user: _currentUser!),
+      ),
+    ).then((_) => _loadUserData());
+  }
+
+  Future<void> _uploadProfilePicture() async {
+    try {
+      final image = await ImageUploadService.pickImage();
+      if (image == null) return;
+
+      if (!ImageUploadService.isValidImage(image)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a JPG/PNG/WebP image.')),
+        );
+        return;
+      }
+
+      final sizeOk = await ImageUploadService.isFileSizeValid(image);
+      if (!sizeOk) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Image is larger than 5MB. Please choose a smaller file.')),
+        );
+        return;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Uploading profile picture...')),
+      );
+
+      final downloadUrl = await ImageUploadService.uploadProfilePicture(image);
+      if (downloadUrl == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to upload image.')),
+        );
+        return;
+      }
+
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      final ok = await UserService.updateProfilePicture(uid, downloadUrl);
+      if (ok) {
+        setState(() {
+          _currentUser = _currentUser!.copyWith(profileImageUrl: downloadUrl);
+        });
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated.')),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to save image URL.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
+
 
   Future<void> _signOut() async {
     try {
