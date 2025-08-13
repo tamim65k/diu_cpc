@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'login_screen.dart';
+import 'features/authentication/enhanced_login_screen.dart';
 import 'home_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
@@ -24,7 +24,7 @@ class AuthWrapper extends StatelessWidget {
           return const HomeScreen();
         } else {
           // User is not signed in
-          return const LoginScreen();
+          return const EnhancedLoginScreen();
         }
       },
     );
