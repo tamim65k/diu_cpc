@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_model.dart';
 
 class GoogleSignInService {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -29,7 +31,39 @@ class GoogleSignInService {
       );
 
       // Sign in to Firebase with the Google credential
-      return await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      
+      // Check if user document exists in Firestore, create if it doesn't
+      if (userCredential.user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCredential.user!.uid)
+            .get();
+        
+        if (!userDoc.exists) {
+          // Create user document for new Google Sign-In users
+          final newUser = UserModel(
+            uid: userCredential.user!.uid,
+            name: userCredential.user!.displayName ?? 'User',
+            email: userCredential.user!.email ?? '',
+            phone: '',
+            department: '',
+            academicYear: '',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            isEmailVerified: userCredential.user!.emailVerified,
+            membershipStatus: MembershipStatus.pending,
+            profileImageUrl: userCredential.user!.photoURL,
+          );
+          
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userCredential.user!.uid)
+              .set(newUser.toFirestore());
+        }
+      }
+      
+      return userCredential;
     } catch (e) {
       print('Error signing in with Google: $e');
       rethrow;

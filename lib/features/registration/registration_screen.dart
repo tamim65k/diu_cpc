@@ -86,13 +86,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       // Create user model
       UserModel userModel = UserModel(
-        id: '', // Will be set by AuthService
-        fullName: _fullNameController.text.trim(),
+        uid: '', // Will be set by AuthService
+        name: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
+        phone: _phoneController.text.trim(),
         department: _selectedDepartment!,
         academicYear: _selectedAcademicYear!,
         createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
         isApproved: false,
         isEmailVerified: false,
       );
@@ -162,13 +163,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         title: const Text(
           'Membership Registration',
           style: TextStyle(
-            color: AppColors.white,
+            color: AppColors.mediumBlue,
             fontWeight: FontWeight.bold,
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.white),
+        iconTheme: const IconThemeData(color: AppColors.mediumBlue),
       ),
       body: GradientBackground(
         useStandardBackground: true,

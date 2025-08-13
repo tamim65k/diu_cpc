@@ -30,7 +30,7 @@ class AuthService {
 
       // Save user data to Firestore
       await _firestore.collection('users').doc(result.user!.uid).set(
-        userModel.copyWith(id: result.user!.uid).toMap(),
+        userModel.copyWith(uid: result.user!.uid).toFirestore(),
       );
 
       return result;
@@ -90,7 +90,7 @@ class AuthService {
     try {
       DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
-        return UserModel.fromMap(doc.data() as Map<String, dynamic>);
+        return UserModel.fromFirestore(doc);
       }
       return null;
     } catch (e) {
@@ -101,7 +101,7 @@ class AuthService {
   // Update user data in Firestore
   Future<void> updateUserData(UserModel userModel) async {
     try {
-      await _firestore.collection('users').doc(userModel.id).update(userModel.toMap());
+      await _firestore.collection('users').doc(userModel.uid).update(userModel.toFirestore());
     } catch (e) {
       throw Exception('Failed to update user data: ${e.toString()}');
     }

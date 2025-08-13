@@ -190,6 +190,19 @@ class _EnhancedLoginScreenState extends State<EnhancedLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text(
+          'DIU CPC Login',
+          style: TextStyle(
+            color: AppColors.mediumBlue,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.mediumBlue),
+      ),
       body: GradientBackground(
         useStandardBackground: true,
         backgroundColor: AppColors.primaryBackground,
