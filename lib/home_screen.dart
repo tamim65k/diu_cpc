@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'models/user_model.dart';
+import 'models/event_model.dart';
+import 'services/event_service.dart';
+import 'services/user_service.dart';
 import 'services/google_sign_in_service.dart';
 import 'features/events/events_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/announcements/announcements_screen.dart';
 import 'widgets/gradient_background.dart';
 import 'theme/app_colors.dart';
-import 'models/user_model.dart';
-import 'services/user_service.dart';
-import 'services/event_service.dart';
 import 'models/event_model.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -349,8 +351,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'Latest News',
                 color: Colors.orange,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Announcements coming soon!')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AnnouncementsScreen()),
                   );
                 },
               ),

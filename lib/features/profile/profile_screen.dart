@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/user_model.dart';
 import '../../models/event_model.dart';
+import '../../models/badge_model.dart';
 import '../../services/event_service.dart';
 import '../../services/user_service.dart';
+import '../../services/badge_service.dart';
 import '../../services/google_sign_in_service.dart';
+import '../../widgets/badge_widgets.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/profile_stats_card.dart';
 import 'widgets/event_history_card.dart';
@@ -22,6 +25,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   late TabController _tabController;
   UserModel? _currentUser;
   bool _isLoading = true;
+  List<UserBadgeModel> _userBadges = [];
+  Map<String, int> _badgeStats = {};
 
   @override
   void initState() {
@@ -60,6 +65,12 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (userProfile != null) {
         setState(() {
           _currentUser = userProfile;
+        });
+        
+        // Load user badges and stats
+        await _loadUserBadges(user.uid);
+        
+        setState(() {
           _isLoading = false;
         });
       } else {
@@ -107,6 +118,25 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
       }
       print('Profile loading error: $e'); // Debug logging
+    }
+  }
+
+  Future<void> _loadUserBadges(String userId) async {
+    try {
+      // Check and award automatic badges
+      await BadgeService.checkAndAwardAutomaticBadges(userId);
+      
+      // Load user badges
+      final badges = await BadgeService.getUserBadges(userId);
+      final stats = await BadgeService.getUserBadgeStats(userId);
+      
+      setState(() {
+        _userBadges = badges;
+        _badgeStats = stats;
+      });
+    } catch (e) {
+      print('Error loading user badges: $e');
+      // Don't show error to user as badges are not critical
     }
   }
 
@@ -367,52 +397,83 @@ class _ProfileScreenState extends State<ProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Membership Status Badge
+          if (_currentUser != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                MembershipStatusBadge(
+                  status: _currentUser!.membershipStatus,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
+          
+          // Badge Statistics
+          if (_badgeStats.isNotEmpty) ...[
+            BadgeStatsCard(stats: _badgeStats),
+            const SizedBox(height: 20),
+          ],
+          
+          // Badges Section
           const Text(
-            'Badges & Achievements',
+            'Your Badges',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
-              children: [
-                _buildAchievementCard(
-                  'Event Enthusiast',
-                  'Attended 5+ events',
-                  Icons.event,
-                  Colors.blue,
-                  isEarned: true,
+          
+          // User Badges Display
+          if (_userBadges.isNotEmpty)
+            Expanded(
+              child: BadgeGrid(
+                badges: _userBadges,
+                maxDisplay: 20, // Show more badges in profile
+                showDetails: true,
+                onBadgeTap: (userBadge) {
+                  showDialog(
+                    context: context,
+                    builder: (context) => BadgeDetailsDialog(userBadge: userBadge),
+                  );
+                },
+              ),
+            )
+          else
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.emoji_events_outlined,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No badges earned yet',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Complete your profile and participate in events to earn badges!',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                _buildAchievementCard(
-                  'Contest Participant',
-                  'Joined a programming contest',
-                  Icons.emoji_events,
-                  Colors.green,
-                  isEarned: false,
-                ),
-                _buildAchievementCard(
-                  'Workshop Learner',
-                  'Completed 3+ workshops',
-                  Icons.school,
-                  Colors.orange,
-                  isEarned: false,
-                ),
-                _buildAchievementCard(
-                  'Community Member',
-                  'Active for 6+ months',
-                  Icons.people,
-                  Colors.purple,
-                  isEarned: true,
-                ),
-              ],
+              ),
             ),
-          ),
         ],
       ),
     );

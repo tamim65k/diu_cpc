@@ -18,6 +18,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'DIU CPC - Computer Programming Club',
       theme: AppTheme.lightTheme,
       home: const AuthWrapper(),

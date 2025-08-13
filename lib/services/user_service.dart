@@ -85,6 +85,20 @@ class UserService {
     }
   }
 
+  /// Update user profile picture URL
+  static Future<bool> updateProfilePicture(String uid, String profileImageUrl) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'profileImageUrl': profileImageUrl,
+        'updatedAt': Timestamp.now(),
+      });
+      return true;
+    } catch (e) {
+      print('Error updating profile picture: $e');
+      return false;
+    }
+  }
+
   /// Get user profile stream for real-time updates
   static Stream<UserModel?> getUserProfileStream(String uid) {
     return _firestore

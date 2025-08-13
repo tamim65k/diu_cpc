@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/user_model.dart';
 import '../../utils/validators.dart';
+import '../../services/image_upload_service.dart';
+import '../../services/user_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
+  final UserModel? currentUser;
 
   const EditProfileScreen({
     super.key,
     required this.user,
+    this.currentUser,
   });
 
   @override
@@ -23,6 +29,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _academicYearController = TextEditingController();
   
   bool _isLoading = false;
+  bool _isUploadingImage = false;
+  String? _newProfileImageUrl;
 
   @override
   void initState() {
@@ -96,10 +104,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               CircleAvatar(
                 radius: 60,
                 backgroundColor: Colors.grey[200],
-                child: widget.user.profileImageUrl != null
+                child: _newProfileImageUrl != null
                     ? ClipOval(
                         child: Image.network(
-                          widget.user.profileImageUrl!,
+                          _newProfileImageUrl!,
                           width: 120,
                           height: 120,
                           fit: BoxFit.cover,
@@ -108,7 +116,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           },
                         ),
                       )
-                    : _buildDefaultAvatar(),
+                    : widget.user.profileImageUrl != null &&
+                            widget.user.profileImageUrl!.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              widget.user.profileImageUrl!,
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildDefaultAvatar();
+                              },
+                            ),
+                          )
+                        : _buildDefaultAvatar(),
               ),
               Positioned(
                 bottom: 0,
@@ -130,15 +151,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 16),
           TextButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Profile picture upload coming soon!'),
-                ),
-              );
-            },
-            icon: const Icon(Icons.photo_library),
-            label: const Text('Change Photo'),
+            onPressed: _isUploadingImage ? null : _showImageSourceDialog,
+            icon: _isUploadingImage 
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.photo_library),
+            label: Text(_isUploadingImage ? 'Uploading...' : 'Change Photo'),
           ),
         ],
       ),
@@ -344,17 +365,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      // Update user data in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.user.uid)
-          .update({
+      // Prepare update data
+      Map<String, dynamic> updateData = {
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'department': _departmentController.text,
         'academicYear': _academicYearController.text,
         'updatedAt': Timestamp.now(),
-      });
+      };
+
+      // Add profile image URL if a new one was uploaded
+      if (_newProfileImageUrl != null) {
+        updateData['profileImageUrl'] = _newProfileImageUrl;
+      }
+
+      // Update user data in Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.user.uid)
+          .update(updateData);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -380,6 +409,185 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Show dialog to select image source (camera or gallery)
+  Future<void> _showImageSourceDialog() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera, color: Colors.green),
+                title: const Text('Take a Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickAndUploadImage(ImageSource.camera);
+                },
+              ),
+              if (widget.currentUser?.profileImageUrl != null &&
+                  widget.currentUser!.profileImageUrl!.isNotEmpty)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Remove Photo'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _removeProfilePicture();
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Pick image and upload to Firebase Storage
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    try {
+      setState(() {
+        _isUploadingImage = true;
+      });
+
+      // Pick image
+      final XFile? imageFile = await ImageUploadService.pickImage(source: source);
+      if (imageFile == null) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      // Validate image
+      if (!ImageUploadService.isValidImage(imageFile)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Please select a valid image file (JPG, PNG, WEBP)'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      // Check file size
+      if (!await ImageUploadService.isFileSizeValid(imageFile)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Image size must be less than 5MB'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return;
+      }
+
+      // Upload image
+      final String? downloadUrl = await ImageUploadService.uploadProfilePicture(imageFile);
+      if (downloadUrl != null) {
+        setState(() {
+          _newProfileImageUrl = downloadUrl;
+          _isUploadingImage = false;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture uploaded successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to upload profile picture. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() {
+          _isUploadingImage = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      setState(() {
+        _isUploadingImage = false;
+      });
+    }
+  }
+
+  /// Remove profile picture
+  Future<void> _removeProfilePicture() async {
+    try {
+      setState(() {
+        _isUploadingImage = true;
+      });
+
+      // Delete from Firebase Storage if it exists
+      if (widget.currentUser?.profileImageUrl != null &&
+          widget.currentUser!.profileImageUrl!.isNotEmpty) {
+        await ImageUploadService.deleteProfilePicture(
+          widget.currentUser!.profileImageUrl!,
+        );
+      }
+
+      setState(() {
+        _newProfileImageUrl = ''; // Set to empty string to remove
+        _isUploadingImage = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile picture removed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error removing profile picture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      setState(() {
+        _isUploadingImage = false;
+      });
     }
   }
 
