@@ -1,0 +1,76 @@
+{
+  "project_info": {
+    "project_number": "741543342347",
+    "project_id": "fir-tutorial-af5d5",
+    "storage_bucket": "fir-tutorial-af5d5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741543342347:android:f1bc06528566b907e0720e",
+        "android_client_info": {
+          "package_name": "com.example.diu_cpc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "741543342347-u4ber8ub99vn3l0pej6o2i7ha0kpbik3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.diu_cpc",
+            "certificate_hash": "9a01efeb49f3f5b0bbf1996c56489a3ba5b74693"
+          }
+        },
+        {
+          "client_id": "741543342347-fgijmrsubnd11m73pscpg8o30pt01sn7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASA46LiErYpVViFJL5MhwD-TjzXDRwKQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741543342347-fgijmrsubnd11m73pscpg8o30pt01sn7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741543342347:android:ead0241c4f87d028e0720e",
+        "android_client_info": {
+          "package_name": "com.example.firebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "741543342347-fgijmrsubnd11m73pscpg8o30pt01sn7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASA46LiErYpVViFJL5MhwD-TjzXDRwKQI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "741543342347-fgijmrsubnd11m73pscpg8o30pt01sn7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
