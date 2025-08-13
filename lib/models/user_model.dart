@@ -23,6 +23,7 @@ class UserModel {
   final bool isEmailVerified;
   final MembershipStatus membershipStatus;
   final String? profileImageUrl;
+  final bool announcementNotificationsEnabled;
 
   UserModel({
     required this.uid,
@@ -45,6 +46,7 @@ class UserModel {
     this.isEmailVerified = false,
     this.membershipStatus = MembershipStatus.pending,
     this.profileImageUrl,
+    this.announcementNotificationsEnabled = true,
   });
 
   // Backward compatibility getters
@@ -85,6 +87,7 @@ class UserModel {
         orElse: () => MembershipStatus.pending,
       ),
       profileImageUrl: map['profileImageUrl'],
+      announcementNotificationsEnabled: map['announcementNotificationsEnabled'] ?? true,
     );
   }
 
@@ -122,6 +125,7 @@ class UserModel {
         orElse: () => MembershipStatus.pending,
       ),
       profileImageUrl: data['profileImageUrl'],
+      announcementNotificationsEnabled: data['announcementNotificationsEnabled'] ?? true,
     );
   }
 
@@ -147,6 +151,7 @@ class UserModel {
       'isEmailVerified': isEmailVerified,
       'membershipStatus': membershipStatus.toString().split('.').last,
       'profileImageUrl': profileImageUrl,
+      'announcementNotificationsEnabled': announcementNotificationsEnabled,
       // Backward compatibility
       'id': uid,
       'fullName': name,
@@ -175,6 +180,7 @@ class UserModel {
       'isEmailVerified': isEmailVerified,
       'membershipStatus': membershipStatus.toString().split('.').last,
       'profileImageUrl': profileImageUrl,
+      'announcementNotificationsEnabled': announcementNotificationsEnabled,
     };
   }
 
@@ -199,6 +205,7 @@ class UserModel {
     bool? isEmailVerified,
     MembershipStatus? membershipStatus,
     String? profileImageUrl,
+    bool? announcementNotificationsEnabled,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -221,6 +228,7 @@ class UserModel {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       membershipStatus: membershipStatus ?? this.membershipStatus,
       profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+      announcementNotificationsEnabled: announcementNotificationsEnabled ?? this.announcementNotificationsEnabled,
     );
   }
 }

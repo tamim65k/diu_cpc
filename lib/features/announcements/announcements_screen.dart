@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/announcement_model.dart';
 import '../../services/announcement_service.dart';
 import '../../widgets/announcement_widgets.dart';
 import 'announcement_details_screen.dart';
+import 'admin/admin_announcement_form_screen.dart';
+import 'category_announcements_screen.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   const AnnouncementsScreen({super.key});
@@ -26,9 +29,74 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
+    // Seed demo data (safe no-op if already exists)
+    AnnouncementService.initializeSampleAnnouncements();
     _loadAnnouncements();
     _loadCategoryCounts();
+  }
+
+  Widget _buildArchiveTab() {
+    return FutureBuilder<List<AnnouncementModel>>(
+      future: AnnouncementService.getArchivedAnnouncements(limit: 50, category: _selectedCategory),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return ListView.builder(
+            itemCount: 3,
+            itemBuilder: (context, index) => const AnnouncementShimmer(),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.red[300],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading archived announcements',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        var archivedAnnouncements = snapshot.data ?? [];
+        if (archivedAnnouncements.isEmpty) {
+          archivedAnnouncements = AnnouncementService.getDemoAnnouncements()
+              .where((a) => a.status == AnnouncementStatus.archived)
+              .where((a) => _selectedCategory == null || a.category == _selectedCategory)
+              .toList();
+        }
+
+        if (archivedAnnouncements.isEmpty) {
+          return const EmptyAnnouncementsWidget(
+            message: 'No archived announcements',
+            subtitle: 'Archived announcements will appear here',
+          );
+        }
+
+        return ListView.builder(
+          itemCount: archivedAnnouncements.length,
+          itemBuilder: (context, index) {
+            final announcement = archivedAnnouncements[index];
+            return AnnouncementCard(
+              announcement: announcement,
+              onTap: () => _navigateToDetails(announcement),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -48,14 +116,34 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
         limit: 50,
         category: _selectedCategory,
       );
-      
+
+      var finalList = announcements;
+      if (finalList.isEmpty) {
+        // Fallback to demo data (published & active)
+        final demo = AnnouncementService.getDemoAnnouncements()
+            .where((a) => a.status == AnnouncementStatus.published)
+            .where((a) => a.expiresAt == null || a.expiresAt!.isAfter(DateTime.now()))
+            .toList();
+        if (_selectedCategory != null) {
+          finalList = demo.where((a) => a.category == _selectedCategory).toList();
+        } else {
+          finalList = demo;
+        }
+      }
+
       setState(() {
-        _allAnnouncements = announcements;
-        _filteredAnnouncements = announcements;
+        _allAnnouncements = finalList;
+        _filteredAnnouncements = finalList;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
+        // On error, show demo data
+        final demo = AnnouncementService.getDemoAnnouncements()
+            .where((a) => a.status == AnnouncementStatus.published)
+            .toList();
+        _allAnnouncements = demo;
+        _filteredAnnouncements = demo;
         _isLoading = false;
       });
       if (mounted) {
@@ -72,11 +160,36 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
   Future<void> _loadCategoryCounts() async {
     try {
       final counts = await AnnouncementService.getCategoryCounts();
-      setState(() {
-        _categoryCounts = counts;
-      });
+      // If no data, compute from demo announcements
+      if (counts.values.fold<int>(0, (p, c) => p + c) == 0) {
+        final demo = AnnouncementService.getDemoAnnouncements()
+            .where((a) => a.status == AnnouncementStatus.published)
+            .toList();
+        final map = <AnnouncementCategory, int>{};
+        for (var cat in AnnouncementCategory.values) {
+          map[cat] = demo.where((a) => a.category == cat).length;
+        }
+        setState(() {
+          _categoryCounts = map;
+        });
+      } else {
+        setState(() {
+          _categoryCounts = counts;
+        });
+      }
     } catch (e) {
       print('Error loading category counts: $e');
+      // Fallback to demo counts on error
+      final demo = AnnouncementService.getDemoAnnouncements()
+          .where((a) => a.status == AnnouncementStatus.published)
+          .toList();
+      final map = <AnnouncementCategory, int>{};
+      for (var cat in AnnouncementCategory.values) {
+        map[cat] = demo.where((a) => a.category == cat).length;
+      }
+      setState(() {
+        _categoryCounts = map;
+      });
     }
   }
 
@@ -132,6 +245,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
           tabs: const [
             Tab(text: 'All', icon: Icon(Icons.list)),
             Tab(text: 'Pinned', icon: Icon(Icons.push_pin)),
+            Tab(text: 'Archive', icon: Icon(Icons.archive)),
             Tab(text: 'Categories', icon: Icon(Icons.category)),
           ],
         ),
@@ -174,12 +288,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
               children: [
                 _buildAllAnnouncementsTab(),
                 _buildPinnedAnnouncementsTab(),
+                _buildArchiveTab(),
                 _buildCategoriesTab(),
               ],
             ),
           ),
         ],
       ),
+      floatingActionButton: _buildAdminFab(),
     );
   }
 
@@ -251,7 +367,12 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
           );
         }
 
-        final pinnedAnnouncements = snapshot.data ?? [];
+        var pinnedAnnouncements = snapshot.data ?? [];
+        if (pinnedAnnouncements.isEmpty) {
+          pinnedAnnouncements = AnnouncementService.getDemoAnnouncements()
+              .where((a) => a.status == AnnouncementStatus.published && a.isPinned)
+              .toList();
+        }
         
         if (pinnedAnnouncements.isEmpty) {
           return const EmptyAnnouncementsWidget(
@@ -356,7 +477,14 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () => _filterByCategory(category),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CategoryAnnouncementsScreen(category: category),
+            ),
+          );
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -388,6 +516,33 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAdminFab() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        final created = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AdminAnnouncementFormScreen(),
+          ),
+        );
+        if (created == true && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Announcement created')),
+          );
+          _loadAnnouncements();
+          _loadCategoryCounts();
+        }
+      },
+      icon: const Icon(Icons.campaign),
+      label: const Text('New Announcement'),
+      backgroundColor: Colors.deepPurple,
+      foregroundColor: Colors.white,
     );
   }
 

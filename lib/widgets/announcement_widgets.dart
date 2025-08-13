@@ -370,7 +370,7 @@ class CategoryFilterChip extends StatelessWidget {
         ],
       ),
       selected: isSelected,
-      onSelected: (_) => onTap,
+      onSelected: (_) => onTap(),
       backgroundColor: Colors.grey[200],
       selectedColor: Colors.blue[100],
       checkmarkColor: Colors.blue[700],

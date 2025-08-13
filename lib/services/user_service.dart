@@ -28,6 +28,20 @@ class UserService {
     }
   }
 
+  /// Toggle announcement notification preference
+  static Future<bool> updateAnnouncementNotifications(String uid, bool enabled) async {
+    try {
+      await _firestore.collection('users').doc(uid).update({
+        'announcementNotificationsEnabled': enabled,
+        'updatedAt': Timestamp.now(),
+      });
+      return true;
+    } catch (e) {
+      print('Error updating announcement notifications: $e');
+      return false;
+    }
+  }
+
   /// Create or update user profile in Firestore
   static Future<bool> saveUserProfile(UserModel userModel) async {
     try {
