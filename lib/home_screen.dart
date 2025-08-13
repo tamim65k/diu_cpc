@@ -143,30 +143,58 @@ class _HomeScreenState extends State<HomeScreen> {
         useStandardBackground: true,
         backgroundColor: AppColors.primaryBackground,
         showCpcLogo: true,
-        child: SafeArea(
-          child: _isLoading 
+        child: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTopNavigationBar(context),
-                    _buildHeroSection(context),
-                    _buildQuickActionButtons(context),
-                    _buildUpcomingEventsPreview(context),
-                    _buildMemberHighlights(context),
-                    _buildFooter(context),
-                  ],
-                ),
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // AppBar area without SafeArea
+                  _buildTopNavigationBar(context),
+                  // Rest of the content stays inside SafeArea
+                  Expanded(
+                    child: SafeArea(
+                      top: false,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeroSection(context),
+                            _buildQuickActionButtons(context),
+                            _buildUpcomingEventsPreview(context),
+                            _buildMemberHighlights(context),
+                            _buildFooter(context),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-        ),
       ),
     );
   }
 
   Widget _buildTopNavigationBar(BuildContext context) {
+    final double statusBar = MediaQuery.of(context).padding.top;
     return Container(
-      padding: const EdgeInsets.all(20.0),
+      padding: EdgeInsets.fromLTRB(20.0, statusBar + 12.0, 20.0, 12.0),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.deepPurple.shade600,
+            Colors.cyan.shade400,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -202,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
+                      color: Colors.white,
                     ),
                   ),
                   Container(
