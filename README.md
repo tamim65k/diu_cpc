@@ -68,30 +68,30 @@ Before running this project, make sure you have:
 ## 📸 Screenshots
 
 ### User Panel
-| Login Screen | Home Dashboard | Events Screen |
+| | | |
 |:---:|:---:|:---:|
-| <img src="1.1.jpg" width="250" height="500"> | <img src="1.2.jpg" width="250" height="500"> | <img src="1.3.png" width="250" height="500"> |
+| <img src="1.jpg" width="250" height="500"> | <img src="1.1.jpg" width="250" height="500"> | <img src="1.2.jpg" width="250" height="500"> |
 
-| Profile Screen | Announcements | Registration |
+| | | |
 |:---:|:---:|:---:|
-| <img src="1.4.jpg" width="250" height="500"> | <img src="1.jpg" width="250" height="500"> | <img src="2.jpg" width="250" height="500"> |
+| <img src="1.3.png" width="250" height="500"> | <img src="1.4.jpg" width="250" height="500"> | <img src="2.jpg" width="250" height="500"> |
 
-| Event Details | Contact Screen | Settings |
+| | | |
 |:---:|:---:|:---:|
 | <img src="3.jpg" width="250" height="500"> | <img src="4.jpg" width="250" height="500"> | <img src="5.jpg" width="250" height="500"> |
 
-| User Management | Navigation | Additional Features |
+| | | |
 |:---:|:---:|:---:|
 | <img src="6.jpg" width="250" height="500"> | <img src="7.jpg" width="250" height="500"> | <img src="8.jpg" width="250" height="500"> |
 
-| Dashboard Overview | | |
+| | | |
 |:---:|:---:|:---:|
 | <img src="9.jpg" width="250" height="500"> | | |
 
 ### Admin Panel
-| Admin Login | Admin Dashboard |
+| | |
 |:---:|:---:|
-| ![Admin Login](admin1.jpg) | ![Admin Dashboard](admin2.jpg) |
+| <img src="admin1.jpg" width="250" height="500"> | <img src="admin2.jpg" width="250" height="500"> |
 
 ## 🏗️ Project Structure
 
