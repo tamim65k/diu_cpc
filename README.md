@@ -70,7 +70,7 @@ Before running this project, make sure you have:
 ### User Panel
 | | | |
 |:---:|:---:|:---:|
-| <img src="1.jpg" width="250" height="500"> | <img src="1.1.jpg" width="250" height="500"> | <img src="1.2.jpg" width="250" height="500"> |
+| <img src="1.1.jpg" width="250" height="500"> | <img src="1.jpg" width="250" height="500"> | <img src="1.2.jpg" width="250" height="500"> |
 
 | | | |
 |:---:|:---:|:---:|
