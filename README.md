@@ -1,6 +1,6 @@
 # DIU CPC - Computer Programming Club
 
-A comprehensive Flutter application for the Daffodil International University Computer Programming Club, featuring user authentication, event management, announcements, and administrative controls with Firebase backend integration.
+A comprehensive Flutter application for the Dhaka International University Computer Programming Club, featuring user authentication, event management, announcements, and administrative controls with Firebase backend integration.
 
 ## 📱 Features
 
@@ -70,11 +70,11 @@ Before running this project, make sure you have:
 ### User Panel
 | | | |
 |:---:|:---:|:---:|
-| <img src="1.1.jpg" width="250" height="500"> | <img src="1.2.jpg" width="250" height="500"> | <img src="1.3.jpg" width="250" height="500"> |
+| <img src="1.1.jpg" width="250" height="500"> | <img src="1.2.jpg" width="250" height="500"> | <img src="1.3.png" width="250" height="500"> |
 
 | | | |
 |:---:|:---:|:---:|
-| <img src="1.4.png" width="250" height="500"> | <img src="1.jpg" width="250" height="500"> | <img src="2.jpg" width="250" height="500"> |
+| <img src="1.4.jpg" width="250" height="500"> | <img src="1.jpg" width="250" height="500"> | <img src="2.jpg" width="250" height="500"> |
 
 | | | |
 |:---:|:---:|:---:|
@@ -178,7 +178,7 @@ For support and questions:
 
 ## 🙏 Acknowledgments
 
-- Daffodil International University
+- Dhaka International University
 - Computer Programming Club members
 - Flutter and Firebase communities
 - All contributors to this project
